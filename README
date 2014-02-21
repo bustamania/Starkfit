@@ -1,6 +1,8 @@
 Starkfit version 1.0
 correspondence to hendrik.mohrmann@gmx.de
 
+'SavitzkyGolay.py' reference: http://wiki.scipy.org/Cookbook/SavitzkyGolay
+
 Remark for those who accidently stumble in here:
 I am very far from beeing a programmer. I principally solve my problems by copy-and-paste of whatever first search results I can find for my description of the problem. That surely influences my programming style (if I can speak of one) a lot. I recently borrowed a German book which title freely translates to "Less bad programming" from a friend who is more into the whole buisness and this is now the attempt to follow version control and other advices in the book. However if some of you think I could need some advice, I would be glad hearing from you. Here's a description of what the code is doing. It is quite a specific problem though.
 
