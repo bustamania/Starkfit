@@ -11,7 +11,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import pylab as p
 
 from fittingSG import fittingSG
-
+import MathFunctions as function
 
 pi = 3.14159
 c= 3.0*10**10  # c in cm/s
@@ -19,9 +19,8 @@ h= 6.626 * 10**(-34)
 
 # import data -------------------------------------------------------------------------------------------------------------
 
-#rev_wavenumber, rev_absorption = np.loadtxt("NpSRII-158C-CN-water-baseline.DPT", dtype=float, unpack=True)
-rev_wavenumber, rev_absorption = np.loadtxt("MBN/MBN_29.8_abs.dpt", dtype=float, unpack=True)
-rev_wavenumber_diff, rev_difference = np.loadtxt("MBN/MBN_diff_600mV.dpt", dtype=float, unpack=True)
+rev_wavenumber, rev_absorption = np.loadtxt("sample_absorbance.dpt", dtype=float, unpack=True)
+rev_wavenumber_diff, rev_difference = np.loadtxt("sample_difference.dpt", dtype=float, unpack=True)
 
 
 # reverse data array ------------------------------------------------------------------------------------------------------
@@ -34,32 +33,20 @@ difference = rev_difference[::-1]-0.000342298251
 
 # Gaussian fitting of absorbance ------------------------------------------------------------------------------------------
 
-def Gauss(x, y0, A, xc, w):
-    return y0+A*np.exp(-(x-xc)**2/(2*w))
-def Gauss1der(x, y0, A, xc, w):
-    return -(A*y0*(xc-x)*np.exp(-(x-xc)**2/(2*w)))/w
-def Gauss2der(x, y0, A, xc, w):
-    return  (A*y0*np.exp(-(x-xc)**2/(2*w))*(xc**2-2*xc*x-w+x**2))/w**2
 
-GaussFitParam, GaussFitCovariances = curve_fit(Gauss, wavenumber, absorption, p0 = [0, 0.0012, 2230, 20])
+GaussFitParam, GaussFitCovariances = curve_fit(function.Gauss, wavenumber, absorption, p0 = [0, 0.0012, 2230, 20])
 
 
 # Voigtian fitting of absorbance ------------------------------------------------------------------------------------------
 
-#def Voigt(x, y0, A, xc, w):
-#    return y0+A*np.exp(-(x-xc)**2/(2*w))+2*A/pi*w/(4*(x-xc)**2+w**2)
-#def Voigt1der(x, y0, A, xc, w):
-#    return -(A*y0*(xc-x)*np.exp(-(x-xc)**2/(2*w)))/w -(16*A*w*(x-xc))/(pi*(4*(xc-x)**2+w**2)**2)
-#def Voigt2der(x, y0, A, xc, w):
-#    return  (A*y0*np.exp(-(x-xc)**2/(2*w))*(xc**2-2*xc*x-w+x**2))/w**2  -(16*A*w*(-12*xc**2+24*xc*x+w**2-12*x**2))/(pi*(4*xc**2-8*xc*x+w**2+4*x**2)**3)
 
 #VoigtFitParam, VoigtFitCovariances = curve_fit(Voigt, wavenumber, absorption, p0 = [0, 0.0012, 2156, 20])
 #print VoigtFitParam
 
 # Savitzky-Golay Smoothing of Data ----------------------------------------------------------------------------------------
 
-window_size = 13
-order = 10
+window_size = 17
+order = 6
 
 (ysg, dydxsg, ddydxxsg, diffSG) = fittingSG(wavenumber, absorption, difference, window_size, order)
 #(ysg2, dydxsg2, ddydxxsg2, diffSG) = fittingSG(wavenumber, absorption, difference, window_size, order)
@@ -68,19 +55,21 @@ order = 10
 
 spline_abs = interpolate.splrep(wavenumber, absorption, s=0)			# spline
 spline_absy = interpolate.splev(wavenumber, spline_abs, der=0)			# 0th derivative (to show it)
+#spline_absy = function.derivative0(wavenumber, absorption)
 
 # first derivative of cubic spline ----------------------------------------------------------------------------------------
 
 dy = interpolate.splev(wavenumber, spline_abs, der=1)				# 1st derivative
 spline_dy = interpolate.splrep(wavenumber, dy, s=0.0)				# spline of 1st derivative
+#spline_dy= function.derivative1(wavenumber, spline_absy)
 #spline_dyy = interpolate.splev(wavenumber, spline_dy, der=0)			# 0th derivative (of first derivative to show it)
 
 # second derivative of cubic spline ---------------------------------------------------------------------------------------
 
 ddy = interpolate.splev(wavenumber, spline_dy, der=1)				# 2nd derivative
 spline_ddy = interpolate.splrep(wavenumber, ddy, s=0)				# spline of 2nd derivative
-#spline_ddyy = interpolate.splev(wavenumber, spline_ddy, der=0)			# 0th derivative (of second derivative to show it)
-
+spline_ddyy = interpolate.splev(wavenumber, spline_ddy, der=0)			# 0th derivative (of second derivative to show it)
+#spline_ddy = function.derivative1(wavenumber, spline_dy)
 
 # cubic spline of difference ----------------------------------------------------------------------------------------------
 
@@ -99,12 +88,11 @@ A1= A3= 1.68*10**(-19)
 B1= B3= 1.1*10**(-39)
 C1= C3= 5.2*10**(-62)
 
-def sum_of_Gauss(x,y0, F):
-    return y0+F**2*(A1*10**16 * Gauss(wavenumber, *GaussFitParam)  +    B1*10**16/(15.0*h*c)* x * Gauss1der(wavenumber, *GaussFitParam) +    C1*10**16/(30.0*h**2*c**2)* x * Gauss2der(wavenumber, *GaussFitParam))
+def sum_of_Gauss(x,y0,ElectricField):
+    return y0+ElectricField**2*(A1*10**16 * function.Gauss(wavenumber, *GaussFitParam)  +    B1*10**16/(15.0*h*c)* x * function.Gauss1der(wavenumber, *GaussFitParam) +    C1*10**16/(30.0*h**2*c**2)* x * function.Gauss2der(wavenumber, *GaussFitParam))
 
-def sum_of_Voigt(x, A2, B2, C2, F):
-    return F**2*(A2*10**16 * Voigt(wavenumber, *VoigtFitParam)  +    B2*10**16/(15.0*h*c)* x * Voigt1der(wavenumber, *VoigtFitParam) +    C2*10**16/(30.0*h**2*c**2)* x * Voigt2der(wavenumber, *VoigtFitParam))
-
+def sum_of_Voigt(x, A2, B2, C2, ElectricField):
+    return ElectricField**2*(A2*10**16 * UnifiedVoigt(wavenumber, *VoigtFitParam)  +    B2*10**16/(15.0*h*c)* x * UnifiedVoigt1der(wavenumber, *VoigtFitParam) +    C2*10**16/(30.0*h**2*c**2)* x * UnifiedVoigt2der(wavenumber, *VoigtFitParam))
 def sum_of_SG(x,A3, B3, C3, F):
     return F**2*(A3*10**16 * ysg    +    B3*10**16/(15.0*c*h)* x * dydxsg    +    C3*10**16/(30.0*c**2*h**2)* x * ddydxxsg)
 
@@ -197,16 +185,16 @@ plt.plot(wavenumber, dy*10, '-', label= 'first derivative')
 plt.plot(wavenumber, ddy*100, '-', label= 'second derivative')
 #plt.plot(wavenumber, spline_dyy*100, '-', label= 'second derivative spline')
 
-plt.plot(wavenumber, Gauss(wavenumber, *GaussFitParam), '-', label='Gaussian fit')
-plt.plot(wavenumber, Gauss1der(wavenumber, *GaussFitParam)*10000, '-', label= 'first derivative Gauss')
-plt.plot(wavenumber, Gauss2der(wavenumber, *GaussFitParam)*100000, '-', label= 'second derivative Gauss')
+plt.plot(wavenumber, function.Gauss(wavenumber, *GaussFitParam), '-', label='Gaussian fit')
+plt.plot(wavenumber, function.Gauss1der(wavenumber, *GaussFitParam)*10000, '-', label= 'first derivative Gauss')
+plt.plot(wavenumber, function.Gauss2der(wavenumber, *GaussFitParam)*100000, '-', label= 'second derivative Gauss')
 
 #plt.plot(wavenumber, Voigt(wavenumber, *VoigtFitParam), '-', label='Voigtian fit')
 #plt.plot(wavenumber, Voigt1der(wavenumber, *VoigtFitParam)*100, '-', label= 'first derivative Voigt')
 #plt.plot(wavenumber, Voigt2der(wavenumber, *VoigtFitParam)*1000, '-', label= 'second derivative Voigt')
 
 plt.legend(loc= 'lower right', bbox_to_anchor=(1.05, 1.05))
-plt.axis([2260,2200,abs_lowerlimit,abs_upperlimit])
+plt.axis([2190,2130,abs_lowerlimit,abs_upperlimit])
 plt.grid
 
 
@@ -221,7 +209,7 @@ plt.plot(wavenumber, sum_of_Gauss(wavenumber, *FitParamGauss), '-', label = 'Fit
 #plt.plot(wavenumber, sum_of_Voigt(wavenumber, *BestFitSumParam), '-', label = 'Fit as sum of 0th, 1st and 2nd derivative of Voigt')
 
 plt.legend(loc= 'lower right', bbox_to_anchor=(1.05, 1.05))
-plt.axis([2260,2200,diff_lowerlimit, diff_upperlimit])
+plt.axis([2190,2130,diff_lowerlimit, diff_upperlimit])
 plt.grid
 
 
@@ -246,7 +234,7 @@ plt.plot(wavenumber, dydxsg*10000, '-', label= 'SG first derivative')
 plt.plot(wavenumber, ddydxxsg*80000, '-', label= 'SG second derivative')
 
 plt.legend(loc= 'lower right', bbox_to_anchor=(1.05, 1.05))
-plt.axis([2260,2200,abs_lowerlimit,abs_upperlimit])
+plt.axis([2190,2130,abs_lowerlimit,abs_upperlimit])
 
 
 
@@ -261,7 +249,7 @@ plt.plot(wavenumber, sum_of_Gauss(wavenumber, *FitParamGauss), '-', label = 'Fit
 
 plt.plot(wavenumber, sum_of_SG(wavenumber, *FitParamSG), '-', label = 'Fit as sum of SG')
 plt.legend(loc= 'lower right', bbox_to_anchor=(1.05, 1.05))
-plt.axis([2260,2200,diff_lowerlimit, diff_upperlimit])
+plt.axis([2190,2130,diff_lowerlimit, diff_upperlimit])
 
 
 plt.show()
