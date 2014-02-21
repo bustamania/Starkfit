@@ -1,0 +1,11 @@
+Starkfit version 1.0
+correspondence to hendrik.mohrmann@gmx.de
+
+Remark for those who accidently stumble in here:
+I am very far from beeing a programmer. I principally solve my problems by copy-and-paste of whatever first search results I can find for my description of the problem. That surely influences my programming style (if I can speak of one) a lot. I recently borrowed a German book which title freely translates to "Less bad programming" from a friend who is more into the whole buisness and this is now the attempt to follow version control and other advices in the book. However if some of you think I could need some advice, I would be glad hearing from you. Here's a description of what the code is doing. It is quite a specific problem though.
+
+
+This small project is written to fit a data table as the sum of the zeroth, first and second order derivatives of another data table. The fitted table contains measured difference FTIR data while the data used for the fit comes from the absorbance FTIR spectrum of the same entity, i.e. a Stark-Effect sensitive probe like a cyanide (mostly embedded in a protein). The absorbance difference is the difference in electric field strength whose magnitude might be unknown in the experiment and achieved by this fitting routine (if the relative orientation to the probe is known).
+
+
+
