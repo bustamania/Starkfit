@@ -1,3 +1,10 @@
+import numpy as np
+from scipy import interpolate
+from scipy.interpolate import interp1d
+from scipy.optimize import curve_fit
+
+
+
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
 	# r"""Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
 	# The Savitzky-Golay filter removes high frequency noise from data.
@@ -69,3 +76,33 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
 	lastvals = y[-1] + np.abs(y[-half_window-1:-1][::-1] - y[-1])
 	y = np.concatenate((firstvals, y, lastvals))
 	return np.convolve( m[::-1], y, mode='valid')
+
+
+
+def fittingSG(wavenumber, absorption_data, difference_data, window_size, order):
+
+	#-------------------------------------------------------------------------------------------------------
+
+	# Savatzky-Golay fit
+
+	#window_size = 19
+	#order = 6
+
+	ysg = savitzky_golay(absorption_data, window_size, order, 0)
+	dydxsg = savitzky_golay(absorption_data/wavenumber, window_size+2, order, 1)
+	ddydxxsg = savitzky_golay(absorption_data/wavenumber, window_size+2, order, 2)
+
+	#-----------------------------------------------------------------------------------------------------------
+
+
+	# Savitzky-Golay of difference
+
+	diffSG = savitzky_golay(difference_data, window_size, order, 0)
+
+
+	#--------------------------------------------------------------------------------------------------------------
+
+	return (ysg, dydxsg, ddydxxsg, diffSG)
+
+
+
