@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 #import mpl_toolkits.mplot3d.axes3d as p3
 
+# Henne is a sausage!
 
 from SavitzkyGolay import savitzky_golay
 import MathFunctions as function
